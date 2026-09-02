@@ -1,0 +1,2 @@
+[console_scripts]
+satquery = app.ui:main

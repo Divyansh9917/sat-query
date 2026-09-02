@@ -1,0 +1,69 @@
+# ─── SatQuery AI Configuration ────────────────────────────────────────────────
+
+# Device selection: "cuda" | "cpu" | "auto" (auto-detects GPU)
+device: "auto"
+
+# ─── Model Configuration ─────────────────────────────────────────────────────
+models:
+  vqa_captioner:
+    backbone: "Salesforce/blip2-opt-2.7b"
+    max_new_tokens: 256
+    temperature: 0.7
+    lora_weights: null  # Path to LoRA checkpoint, null = base model
+    lora_rank: 16
+    lora_alpha: 32
+
+  grounding:
+    backbone: "IDEA-Research/grounding-dino-tiny"
+    box_threshold: 0.25
+    text_threshold: 0.20
+    nms_iou_threshold: 0.5
+
+  change_detector:
+    feature_backbone: "resnet18"
+    pretrained: true
+    change_threshold: 0.5
+    vqa_backbone: "Salesforce/blip2-opt-2.7b"  # reuses VQA model
+
+  optical_sar_fusion:
+    classifier_channels: [64, 128, 64]
+    num_classes: 5  # water, built-up, vegetation, flood, other
+    class_labels:
+      - "Water"
+      - "Built-Up"
+      - "Vegetation"
+      - "Flood"
+      - "Other"
+
+# ─── Geo-Processing ──────────────────────────────────────────────────────────
+geo:
+  normalization_method: "percentile"  # "minmax" | "percentile" | "histogram"
+  percentile_low: 2
+  percentile_high: 98
+  default_crs: "EPSG:4326"
+  supported_formats:
+    - ".tif"
+    - ".tiff"
+    - ".png"
+    - ".jpg"
+    - ".jpeg"
+
+# ─── Orchestrator ─────────────────────────────────────────────────────────────
+orchestrator:
+  default_confidence_threshold: 0.3
+  enable_llm_fallback: false  # Use LLM for intent when keyword rules fail
+  max_execution_time_seconds: 120
+
+# ─── UI Settings ──────────────────────────────────────────────────────────────
+ui:
+  page_title: "SatQuery AI"
+  page_icon: "🛰️"
+  layout: "wide"
+  theme:
+    primary_color: "#6C63FF"
+    secondary_color: "#00D4AA"
+    accent_color: "#FF6B6B"
+    bg_dark: "#0E1117"
+    bg_card: "#1A1D23"
+    text_primary: "#FAFAFA"
+    text_secondary: "#8B949E"
