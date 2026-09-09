@@ -20,9 +20,10 @@ opencv-python>=4.9.0
 Pillow>=10.2.0
 scikit-image>=0.22.0
 
-# Web Application
-streamlit>=1.35.0
-plotly>=5.20.0
+# Web API
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
 
 # Reports & Export
 fpdf2>=2.7.0
