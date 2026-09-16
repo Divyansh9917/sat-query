@@ -28,12 +28,13 @@
 
 ```mermaid
 flowchart TB
-    subgraph UI["🖥️ Streamlit Web App"]
-        Upload["Image Upload<br/>(GeoTIFF / PNG / JPEG)"]
-        Query["Natural Language Query"]
-        Viz["Visualization + Overlays"]
-        Trace["Execution Trace"]
-        Export["PDF / JSON Reports"]
+    subgraph UI["🖥️ Clients"]
+        Web["Next.js Frontend<br/>(React + Tailwind)"]
+        Demo["Streamlit Demo App<br/>(app/ui.py)"]
+    end
+
+    subgraph API["🔌 API Layer"]
+        FastAPI["FastAPI<br/>(api/main.py)"]
     end
 
     subgraph Core["⚙️ Core Engine"]
@@ -49,88 +50,130 @@ flowchart TB
         Fus["Optical-SAR Fusion<br/>(CNN + Indices)"]
     end
 
-    Upload --> Geo --> Orch
-    Query --> Orch
+    Web --> FastAPI
+    Demo --> Orch
+    FastAPI --> Geo --> Orch
     Orch <--> Reg
     Reg --> VQA & Gnd & Chg & Fus
-    VQA & Gnd & Chg & Fus --> Viz
-    Orch --> Trace
-    Viz --> Export
+    VQA & Gnd & Chg & Fus --> Orch
+    Orch --> FastAPI
+    FastAPI --> Web
 ```
 
 ---
 
+
 ## 📁 Repository Structure
 
 ```
-satquery-ai/
-├── README.md                          # This file
-├── requirements.txt                   # Python dependencies
-├── setup.py                           # Package installation
-├── config/
-│   └── settings.yaml                  # Central configuration
-├── data/
-│   ├── sample_data/                   # Synthetic sample images
-│   │   └── generate_samples.py        # Sample data generator
-│   └── download_benchmarks.py         # BigEarthNet, RSVQA, VRSBench, CDVQA
-├── core/
-│   ├── __init__.py
-│   ├── geoprocessor.py                # Rasterio I/O, band normalization, CRS
-│   ├── registry.py                    # Tool & Model Registry (singleton)
-│   └── orchestrator.py                # Agentic intent → dispatch → trace
-├── models/
-│   ├── __init__.py                    # Lazy imports
-│   ├── adapters.py                    # LoRA + BandProjection adapters
-│   ├── vqa_caption.py                 # BLIP-2 VQA & captioning
-│   ├── grounding.py                   # GroundingDINO visual grounding
-│   ├── change_detector.py             # Siamese change detection + VLM
-│   └── optical_sar_fusion.py          # Optical-SAR fusion classifier
-├── training/
-│   ├── train_bigearthnet_lora.py      # LoRA fine-tuning on BigEarthNet-MM
-│   └── eval_benchmarks.py             # RSVQA / VRSBench / CDVQA evaluation
+sat-query/
+├── README.md
+├── requirements.txt
+├── setup.py
+├── api/
+│ ├── init.py
+│ └── main.py # FastAPI app entrypoint
 ├── app/
-│   ├── __init__.py
-│   ├── ui.py                          # Streamlit web application
-│   └── utils.py                       # Visualization & report generation
-└── tests/
-    ├── test_agent.py                  # Orchestrator & registry tests (30 cases)
-    └── test_models.py                 # Model smoke tests (27 cases)
+│ ├── ui.py # Streamlit demo app
+│ └── utils.py # Visualization & report generation
+├── config/
+│ └── settings.yaml # Central configuration
+├── core/
+│ ├── init.py
+│ ├── geoprocessor.py # Rasterio I/O, band normalization, CRS
+│ ├── orchestrator.py # Agentic intent → dispatch → trace
+│ └── registry.py # Tool & Model Registry (singleton)
+├── data/
+│ ├── sample_data/ # Synthetic sample images
+│ └── download_benchmarks.py # BigEarthNet, RSVQA, VRSBench, CDVQA
+├── models/
+│ ├── init.py
+│ ├── adapters.py # LoRA + BandProjection adapters
+│ ├── vqa_caption.py # BLIP-2 VQA & captioning
+│ ├── grounding.py # GroundingDINO visual grounding
+│ ├── change_detector.py # Siamese change detection + VLM
+│ └── optical_sar_fusion.py # Optical-SAR fusion classifier
+├── training/
+│ ├── train_bigearthnet_lora.py # LoRA fine-tuning on BigEarthNet-MM
+│ └── eval_benchmarks.py # RSVQA / VRSBench / CDVQA evaluation
+├── tests/
+│ ├── test_agent.py # Orchestrator & registry tests
+│ └── test_models.py # Model smoke tests
+├── frontend/ # Next.js + Tailwind web client
+│ ├── src/
+│ ├── public/
+│ ├── package.json
+│ ├── next.config.mjs
+│ └── tailwind.config.ts
+└── .streamlit/ # Streamlit configuration
 ```
+
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|:---|:---|
+| **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS, lucide-react |
+| **Backend API** | FastAPI, Uvicorn |
+| **Agentic Core** | Custom orchestrator (intent classification → tool routing → trace) |
+| **Deep Learning** | PyTorch, Transformers, PEFT (LoRA), Accelerate, OpenCLIP |
+| **Vision-Language Models** | BLIP-2, GroundingDINO |
+| **Geospatial** | Rasterio, PyProj, Shapely, GeoPandas |
+| **Vision & Image Processing** | OpenCV, Pillow, scikit-image |
+| **Reports** | FPDF2, Jinja2 |
+| **Internal Demo UI** | Streamlit |
+| **Testing** | Pytest, pytest-cov |
 
 ---
 
 ## 🚀 Quickstart
 
-### 1. Install
+### 1. Clone & set up the Python environment
 
 ```bash
-# Clone the repository
-git clone https://github.com/satquery-ai/satquery-ai.git
-cd satquery-ai
+git clone https://github.com/Divyansh9917/sat-query.git
+cd sat-query
 
-# Create virtual environment
 python -m venv venv
 source venv/bin/activate    # Linux/Mac
 venv\Scripts\activate       # Windows
 
-# Install dependencies
 pip install -r requirements.txt
 pip install -e .            # Editable install
 ```
 
-### 2. Generate Sample Data
+### 2. Run the backend API
 
 ```bash
-python data/sample_data/generate_samples.py
+uvicorn api.main:app --reload --port 8000
 ```
+- API: http://localhost:8000
+- Docs: http://localhost:8000/docs
 
-### 3. Run the Web App
+### 3. Run the frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+- App: http://localhost:3000
+
+### 4. (Optional) Run the Streamlit demo
 
 ```bash
 streamlit run app/ui.py
 ```
 
-### 4. Run Tests
+### 5. Generate sample data
+
+```bash
+python data/sample_data/generate_samples.py
+```
+
+### 6. Run tests
 
 ```bash
 python -m pytest tests/ -v
@@ -149,7 +192,7 @@ models:
   vqa_captioner:
     backbone: "Salesforce/blip2-opt-2.7b"
     lora_weights: null       # Path to LoRA checkpoint
-  
+
   grounding:
     backbone: "IDEA-Research/grounding-dino-tiny"
     box_threshold: 0.25
@@ -172,8 +215,8 @@ geo:
 
 Download benchmarks:
 ```bash
-python data/download_benchmarks.py --list          # Show available datasets
-python data/download_benchmarks.py --dataset rsvqa  # Download specific dataset
+python data/download_benchmarks.py --list           # Show available datasets
+python data/download_benchmarks.py --dataset rsvqa   # Download specific dataset
 ```
 
 ---
@@ -257,24 +300,4 @@ Every query produces an auditable trace:
 
 ---
 
-## 🛠️ Tech Stack
 
-| Layer | Technology |
-|:---|:---|
-| **Deep Learning** | PyTorch, Transformers, PEFT (LoRA) |
-| **Vision-Language** | BLIP-2, GroundingDINO, OpenCLIP |
-| **Geospatial** | Rasterio, PyProj, GeoPandas |
-| **Web UI** | Streamlit |
-| **Reports** | FPDF2, Jinja2 |
-
----
-
-## 📄 License
-
-Apache 2.0
-
----
-
-<p align="center">
-  Built with 🛰️ for the future of Earth observation AI.
-</p>
